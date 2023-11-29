@@ -1,3 +1,5 @@
+eschedule.db shema
+
 CREATE TABLE members (
     member_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,

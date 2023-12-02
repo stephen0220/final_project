@@ -1,6 +1,6 @@
 import csv
 import datetime
-import pytz
+#import pytz
 import requests
 import subprocess
 import urllib
@@ -36,7 +36,7 @@ def apology(message, code=400):
 
     
 def login_required(f):
-        """ Decorate routes to require login. http://flask.pocoo.org/docs/0.12/patterns/viewdecorators/"""
+    """ Decorate routes to require login. http://flask.pocoo.org/docs/0.12/patterns/viewdecorators/"""
 
     @wraps(f)
     def decorated_function(*args, **kwargs):

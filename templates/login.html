@@ -5,8 +5,8 @@
 {% endblock %}
 
 {% block main %}
-    <form action="{{url_for('register')}}" method="post">
-        
+    <form action="/login" method="post">
+
         <div class="mb-3">
             <input autocomplete="off" autofocus class="form-control mx-auto w-auto" id="username" name="username" placeholder="Username" type="text">
         </div>
@@ -15,5 +15,9 @@
         </div>
         
         <button class="btn btn-primary" type="submit">Log In</button>
+        <div>
+            <p>New member? Click here to create an account!</p>
+            <button class="btn btn-primary" type="submit"><a href="/create_account">Create Account</a></button>
+        </div>
     </form>
 {% endblock %}

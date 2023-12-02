@@ -20,50 +20,53 @@ c = conn.cursor()
 
 # Create Tables (Leave as commented once eschedule.db has been created after first run)
 
-c.execute(""" CREATE TABLE members (
-    member_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    company_name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    phone_number TEXT NOT NULL,
-    username TEXT NOT NULL,
-    password TEXT NOT NULL,
-    hash TEXT NOT NULL
-);
+# tables = [ """CREATE TABLE members (
+#        member_id INTEGER PRIMARY KEY AUTOINCREMENT,
+#        first_name TEXT NOT NULL,
+#        last_name TEXT NOT NULL,
+#        company_name TEXT NOT NULL,
+#        email TEXT NOT NULL,
+#        phone_number TEXT NOT NULL,
+#        username TEXT NOT NULL,
+#        password TEXT NOT NULL,
+#        hash TEXT NOT NULL
+#     );""",
+#     """CREATE TABLE contacts (
+#        contacts_id INTEGER PRIMARY KEY,
+#        first_name TEXT NOT NULL,
+#        last_name TEXT NOT NULL,
+#        phone_number TEXT NOT NULL,
+#        email TEXT NOT NULL,
+#        address TEXT NOT NULL,
+#        work_type TEXT NOT NULL,
+#        member_id INTEGER,
+#        FOREIGN KEY (member_id) REFERENCES members(member_id)
+#     );""",
 
-CREATE TABLE contacts (
-    contacts_id INTEGER PRIMARY KEY,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    phone_number TEXT NOT NULL,
-    email TEXT NOT NULL,
-    address TEXT NOT NULL,
-    work_type TEXT NOT NULL,
-    member_id INTEGER,
-    FOREIGN KEY (member_id) REFERENCES members(member_id)
-);
+#     """CREATE TABLE schedule (
+#         month INTEGER NOT NULL,
+#         day INTEGER NOT NULL,
+#         year INTEGER NOT NULL,
+#         hour INTEGER CHECK (hour >= 1 AND hour < 24),
+#         minute INTEGER CHECK (minute >= 1 AND minute < 60),
+#         contacts_id INTEGER,
+#         FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
+#     );""",
 
-CREATE TABLE schedule (
-    month INTEGER NOT NULL,
-    day INTEGER NOT NULL,
-    year INTEGER NOT NULL,
-    hour INTEGER CHECK (hour >= 1 AND hour < 24),
-    minute INTEGER CHECK (minute >= 1 AND minute < 60),
-    contacts_id INTEGER,
-    FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
-);
+#     """CREATE TABLE proposals (
+#         price INTEGER,
+#         description TEXT,
+#         contacts_id INTEGER,
+#         draft TEXT CHECK (draft IN ('draft','sent')),
+#         FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
+#     );"""
 
-CREATE TABLE proposals (
-    price INTEGER,
-    description TEXT,
-    contacts_id INTEGER,
-    draft TEXT CHECK (draft IN ('draft','sent')),
-    FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
-);""")
+# ]
 
-conn.commit
-conn.close
+# for table in tables:
+#     c.execute(table)
+
+
 
 # c.execute(eschedule_tables)
 """ To ensure no stored caches """
@@ -76,9 +79,9 @@ def after_request(response):
 
 #THESE LINES ARE COMMENTED OUT TO PREVENT SYSTEM ERRORS UNTIL WE HAVE A LOGIN PAGE SET
 #Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
+#app.config["SESSION_PERMANENT"] = False
+#app.config["SESSION_TYPE"] = "filesystem"
+#Session(app)
 
 @app.route('/')
 def home():
@@ -225,3 +228,5 @@ def create_account():
 
         # Redirect user to home page
         return redirect("/")
+    else:
+        return render_template("create_account.html")

@@ -106,6 +106,16 @@ def schedule():
 def clients():
      return render_template('clients.html')
 
+@app.route("/logout")
+def logout():
+    """Log user out"""
+
+    # Forget any user_id
+    session.clear()
+
+    # Redirect user to login form
+    return redirect("/")
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
@@ -114,14 +124,14 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-
+        print("I'm Batman!")
         # Initialize the cursor outside the try block
         c = None
         db = None
         try:
             db = get_db()
             c = db.cursor()
-
+            print("I'm Batman!")
             # Query database for username
             rows = c.execute(
                 "SELECT * FROM members WHERE username = ?", (username,)
@@ -129,19 +139,9 @@ def login():
 
             # Check if the username exists and the password is correct
             if len(rows) == 1 and check_password_hash(rows[0]["hash"], password):
-
-                
-                # Successful login
-                if username is not None:
-                    username= session["user_id"] = rows[0]["id"]
-                    return redirect("/")
-                    # Perform actions with user_id
-                else:
-                    return apology("No item with that key", 400)
-                
-            else:
-                return apology("invalid username and/or password", 403)
-
+                session["user_id"] = rows[0]["member_id"]
+                print("YES!")
+                return redirect("/")
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -176,33 +176,18 @@ def create_account():
         email = request.form.get("email")
         email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
-        if not first_name:
-            return apology("must provide first and last name", 400)
+        if not first_name or not last_name or not company_name:
+            return apology("must provide first and last name and company name", 400)
         
-
-        elif not last_name:
-            return apology("must provide first and last name", 403)
-        
-
-        elif not company_name:
-            return apology("must provide company name", 403)
-        
-
         elif not phone_number or len(phone_number) != 10 or not phone_number.isdigit():
             return apology("must provide a valid phone number", 403)
         
-
         elif not email or not re.match(email_pattern,email):
             return apology("must provide a valid email", 403)
         
-
-        elif not username:
-            return apology("must provide username", 403)
-       
-        # Ensure password was submitted
-        elif not password:
-            return apology("must provide password", 400)
-
+        elif not username or not password:
+            return apology("must provide username and password", 403)
+        
         # Ensure confirmation was submitted
         elif not request.form.get("confirmation"):
             return apology("must confirm password", 400)
@@ -238,7 +223,7 @@ def create_account():
 
             # Remember which user has logged in
             if rows:
-                session["user_id"] = rows[0]["id"]
+                session["user_id"] = rows[0]["member_id"]
 
             # Redirect user to home page
             return redirect("/")

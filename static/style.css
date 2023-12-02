@@ -1,0 +1,16 @@
+body{
+    background-color: rgb(220, 220, 220);
+}
+
+.clients {
+    display: flex;
+    flex-direction: row;
+    border: 1px solid green;
+    overflow: auto;
+    white-space: nowrap;
+
+}
+
+.row {
+    border: 1px solid red;
+}

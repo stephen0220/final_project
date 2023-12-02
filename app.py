@@ -1,20 +1,15 @@
-import os
-import sqlite3
-import re
-
-from flask import Flask, render_template, flash, redirect, request, session
+from flask import Flask, g, flash, redirect, request, session, redirect, url_for, render_template, request
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
+import sqlite3
+import re
 
 app = Flask(__name__)
 app.secret_key = 'a;sldkfjghtyrueiwoqp1029384756' 
-
-# Create database file
-
-conn = sqlite3.connect('eschedule.db')
-
-c = conn.cursor()
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
 
 # PLEASE LEAVE THIS COMMENTED UNTIL I AM FINISHED WITH EDITING THE TABLES!
 
@@ -67,21 +62,28 @@ c = conn.cursor()
 #     c.execute(table)
 
 
+# Function to get the database connection
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect('eschedule.db')
+        db.row_factory = sqlite3.Row  # This line sets the row_factory for better row access
+    return db
 
-# c.execute(eschedule_tables)
-""" To ensure no stored caches """
+# Function to close the database connection
+@app.teardown_appcontext
+def close_db(error):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+# Ensure no stored caches
 @app.after_request
 def after_request(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
-
-#THESE LINES ARE COMMENTED OUT TO PREVENT SYSTEM ERRORS UNTIL WE HAVE A LOGIN PAGE SET
-#Configure session to use filesystem (instead of signed cookies)
-#app.config["SESSION_PERMANENT"] = False
-#app.config["SESSION_TYPE"] = "filesystem"
-#Session(app)
 
 @app.route('/')
 def home():
@@ -100,58 +102,59 @@ def schedule():
      return render_template('schedule.html')
 
 @app.route('/clients')
+@login_required
 def clients():
      return render_template('clients.html')
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
-
-    # Forget any user_id
     session.clear()
 
-    # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-        # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 403)
+        username = request.form.get("username")
+        password = request.form.get("password")
 
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 403)
-        
+        # Initialize the cursor outside the try block
+        c = None
+        db = None
+        try:
+            db = get_db()
+            c = db.cursor()
 
-        # Query database for username
-        rows = c.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
+            # Query database for username
+            rows = c.execute(
+                "SELECT * FROM members WHERE username = ?", (username,)
+            ).fetchall()
 
-        # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(
-            rows[0]["hash"], request.form.get("password")
-        ):
-            return apology("invalid username and/or password", 403)
+            # Check if the username exists and the password is correct
+            if len(rows) == 1 and check_password_hash(rows[0]["hash"], password):
 
-        # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+                
+                # Successful login
+                if username is not None:
+                    username= session["user_id"] = rows[0]["id"]
+                    return redirect("/")
+                    # Perform actions with user_id
+                else:
+                    return apology("No item with that key", 400)
+                
+            else:
+                return apology("invalid username and/or password", 403)
 
-        # Redirect user to home page
-        return redirect("/")
+        except Exception as e:
+            return f"Error: {str(e)}"
 
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
-        return render_template("login.html")
+        finally:
+            # Close the cursor and database connection
+            if c is not None:
+                
+                c.close()
+            if db is not None:
+                db.close()
 
-
-@app.route("/logout")
-def logout():
-    """Log user out"""
-
-    # Forget any user_id
-    session.clear()
-
-    # Redirect user to login form
-    return redirect("/")
+    # Moved the render_template outside the finally block
+    return render_template("login.html")
 
 @app.route("/create_account", methods=["GET", "POST"])
 def create_account():
@@ -161,21 +164,27 @@ def create_account():
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
+
         # Ensure first name was submitted
 
         phone_number = request.form.get("phone_number")
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
+        company_name = request.form.get("company_name")
+        username = request.form.get("username")
+        password = request.form.get("password")
         email = request.form.get("email")
         email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
-        if not request.form.get("first_name"):
+        if not first_name:
             return apology("must provide first and last name", 400)
         
 
-        elif not request.form.get("last_name"):
+        elif not last_name:
             return apology("must provide first and last name", 403)
         
 
-        elif not request.form.get("company_name"):
+        elif not company_name:
             return apology("must provide company name", 403)
         
 
@@ -187,11 +196,11 @@ def create_account():
             return apology("must provide a valid email", 403)
         
 
-        elif not request.form.get("username"):
+        elif not username:
             return apology("must provide username", 403)
        
         # Ensure password was submitted
-        elif not request.form.get("password"):
+        elif not password:
             return apology("must provide password", 400)
 
         # Ensure confirmation was submitted
@@ -199,34 +208,47 @@ def create_account():
             return apology("must confirm password", 400)
 
         # Ensure password and confirmation match
-        elif request.form.get("password") != request.form.get("confirmation"):
+        elif password != request.form.get("confirmation"):
             return apology("passwords must match", 400)
 
-        # Query database for username
-        rows = c.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
+         # Initialize the cursor outside the try block
+        c = None
 
-        # Ensure username exists and password is correct
-        if len(rows) != 0:
-            return apology("username already exists", 400)
+        try:
+            db = get_db()
+            c = db.cursor()
 
-        # Insert username into database
-        c.execute(
-            "INSERT INTO members (username, hash) VALUES(?,?)",
-            request.form.get("username"),
-            generate_password_hash(request.form.get("password")),
-        )
+           # Query database for username
+            row = c.execute("SELECT * FROM members WHERE username = ?", (username,)).fetchone()
 
-        # Query database for newly inserted user
-        rows = c.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
+            # Ensure username exists
+            if row is not None:
+                return apology("Username already exists", 400)
 
-        # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+            # Insert user into database
+            c.execute(
+                "INSERT INTO members (first_name, last_name, company_name, phone_number, email, username, password, hash) VALUES(?,?,?,?,?,?,?,?)",
+                (first_name, last_name, company_name, phone_number, email, username, password, generate_password_hash(password)),
+            )
 
-        # Redirect user to home page
-        return redirect("/")
+            db.commit()
+
+           # Query database for newly inserted user
+            rows = c.execute("SELECT * FROM members WHERE username = ?", (username,)).fetchall()
+
+            # Remember which user has logged in
+            if rows:
+                session["user_id"] = rows[0]["id"]
+
+            # Redirect user to home page
+            return redirect("/")
+        
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+        finally:
+            return render_template ("home.html")
+
     else:
         return render_template("create_account.html")
+

@@ -17,6 +17,7 @@
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
+          
           <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
               <li class="nav-item" >
@@ -32,10 +33,17 @@
                 <a class="nav-link" href="/proposals">Proposals</a>
               </li>
             </ul>
+            {% if session["user_id"] %}
+            <ul class="navbar-nav ms-auto mt-2">
+              <li class="nav-item"><a class="nav-link" href="/logout">Log In</a></li>
+              <li class="nav-item"><a class="nav-link" href="/password">Change Password</a></li>
+            </ul>
+            {% else %}
             <ul class="navbar-nav ms-auto mt-2">
                 <li class="nav-item"><a class="nav-link" href="/login">Log In</a></li>
-                <li class="nav-item"><a class="nav-link" href="/password">Change Password</a></li>
+                <li class="nav-item"><a class="nav-link" href="/create_account">Change Password</a></li>
             </ul>
+            {% endif %}
           </div>
         </div>
       </nav> 

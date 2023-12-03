@@ -3,7 +3,6 @@ from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 import sqlite3
-
 import re
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -240,4 +239,8 @@ def create_account():
 
     else:
         return render_template("create_account.html")
+    
+
+if __name__ == '__main__':
+    app.run(debug=True)
 

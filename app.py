@@ -3,25 +3,17 @@ from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 import sqlite3
-<<<<<<< HEAD
 
-from flask import Flask, render_template
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-=======
 import re
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = 'a;sldkfjghtyrueiwoqp1029384756' 
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
->>>>>>> a4efa92f0e630eeeceaa53fd1d3ac3b7162e3992
 
 # PLEASE LEAVE THIS COMMENTED UNTIL I AM FINISHED WITH EDITING THE TABLES!
 
-<<<<<<< HEAD
-""" To ensure no stored caches """
-=======
 # Create Tables (Leave as commented once eschedule.db has been created after first run)
 
 # tables = [ """CREATE TABLE members (
@@ -87,7 +79,6 @@ def close_db(error):
         db.close()
 
 # Ensure no stored caches
->>>>>>> a4efa92f0e630eeeceaa53fd1d3ac3b7162e3992
 @app.after_request
 def after_request(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -116,11 +107,9 @@ def schedule():
 def clients():
      return render_template('clients.html')
 
-<<<<<<< HEAD
 @app.route('/new_client')
 def new_client():
      return render_template('new_client.html')
-=======
 @app.route("/logout")
 def logout():
     """Log user out"""
@@ -252,4 +241,3 @@ def create_account():
     else:
         return render_template("create_account.html")
 
->>>>>>> a4efa92f0e630eeeceaa53fd1d3ac3b7162e3992

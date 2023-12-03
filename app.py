@@ -91,7 +91,23 @@ def after_request(response):
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+             # Initialize the cursor outside the try block
+        c = None
+
+        try:
+            db = get_db()
+            c = db.cursor()
+
+            clients = c.execute("SELECT * FROM contacts WHERE member_id = ?", (session['user_id'],)).fetchall()
+
+            return render_template("home.html", clients = clients)
+        
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+        finally:
+            c.close()
+
 
 @app.route('/draft')
 def draft():
@@ -145,29 +161,17 @@ def new_client():
         c = None
 
         try:
-            print("I'm BATMAN")
             db = get_db()
             c = db.cursor()
 
             c.execute(
                 "INSERT INTO contacts (first_name, last_name, phone_number, email, address, work_type, member_id) VALUES(?,?,?,?,?,?,?)",
-                (first_name, last_name, phone_number, email, address, work_type, member_id))
-            
-            rows = c.execute(
-                "SELECT * FROM contacts WHERE member_id = ?", (session['user_id'],)
-                ).fetchall()
-            
-            print("I'm STILL BATMAN")
-            
+                (first_name, last_name, phone_number, email, address, work_type, member_id))            
             db.commit()
-            print("BATMAN")
-            print(rows[0]["first_name"])
-            print(rows[0]["last_name"])
 
             return redirect("/")
         
         except Exception as e:
-            print("NO!")
             return f"Error: {str(e)}"
 
         finally:

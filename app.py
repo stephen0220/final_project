@@ -89,25 +89,89 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-@app.route('/')
-def home():
-             # Initialize the cursor outside the try block
-        c = None
+@app.route('/', methods=["GET", "POST"])
+def index():
+    c = None
+    options = None  # Define options outside the try block
 
-        try:
-            db = get_db()
-            c = db.cursor()
+    try:
+        db = get_db()
+        c = db.cursor()
 
-            clients = c.execute("SELECT * FROM contacts WHERE member_id = ?", (session['user_id'],)).fetchall()
+        # Code for the home page for non-members or those who are not logged in
+        options = c.execute("SELECT company_name FROM members").fetchall()
 
-            return render_template("home.html", clients = clients)
-        
-        except Exception as e:
-            return f"Error: {str(e)}"
+        # Client-side submission form
+        if request.method == "POST":
+            # Initialize the cursor outside the try block
 
-        finally:
+            first_name = request.form.get("first_name")
+            last_name = request.form.get("last_name")
+            phone_number = request.form.get("phone_number")
+            address = request.form.get("address")
+            work_type = request.form.get("work_type")
+            email = request.form.get("email")
+            company = request.form.get("company")
+
+            email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+
+            if not first_name or not last_name:
+                return apology("must provide first and last name", 400)
+
+            elif not phone_number or len(phone_number) != 10 or not phone_number.isdigit():
+                return apology("must provide a valid phone number", 403)
+
+            elif not email or not re.match(email_pattern, email):
+                return apology("must provide a valid email", 403)
+
+            elif not address or not work_type:
+                return apology("must provide address and work type", 403)
+
+            elif not company:
+                return apology("must select a company")
+            # Fetch the company_id
+            company_id_row = c.execute(
+                "SELECT member_id FROM members WHERE company_name = ?", (company,)
+            ).fetchone()
+
+            # Check if the company exists
+            if company_id_row is not None:
+                company_id = company_id_row[0]  # Extract the value from the row
+                # Your insertion code here
+                c.execute(
+                    "INSERT INTO contacts (first_name, last_name, phone_number, email, address, work_type, member_id) VALUES(?,?,?,?,?,?,?)",
+                    (first_name, last_name, phone_number, email, address, work_type, company_id)
+                )
+                db.commit()
+                
+                return render_template("index.html", options=options)
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        if c:
             c.close()
 
+    return render_template("index.html", options=options)
+
+@app.route('/home')
+
+def home():
+    c = None
+    try:
+        db = get_db()
+        c = db.cursor()
+
+        # Code for the home page after member login
+        clients = c.execute("SELECT * FROM contacts WHERE member_id = ?", (session['user_id'],)).fetchall()
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+    return render_template("home.html", clients=clients)
 
 @app.route('/draft')
 def draft():
@@ -169,7 +233,7 @@ def new_client():
                 (first_name, last_name, phone_number, email, address, work_type, member_id))            
             db.commit()
 
-            return redirect("/")
+            return redirect("/home")
         
         except Exception as e:
             return f"Error: {str(e)}"
@@ -213,7 +277,7 @@ def login():
             if len(rows) == 1 and check_password_hash(rows[0]["hash"], password):
                 session["user_id"] = rows[0]["member_id"]
                 print("YES!")
-                return redirect("/")
+                return redirect("/home")
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -298,7 +362,7 @@ def create_account():
                 session["user_id"] = rows[0]["member_id"]
 
             # Redirect user to home page
-            return redirect("/")
+            return redirect("/home")
         
         except Exception as e:
             return f"Error: {str(e)}"

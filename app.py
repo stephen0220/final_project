@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 import sqlite3
 import re
+import calendar
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = 'a;sldkfjghtyrueiwoqp1029384756' 
@@ -164,7 +165,23 @@ def home():
         c = db.cursor()
 
         # Code for the home page after member login
-        clients = c.execute("SELECT * FROM contacts WHERE member_id = ?", (session['user_id'],)).fetchall()
+        clients = c.execute("""
+            SELECT
+                contacts.first_name,
+                contacts.last_name,
+                contacts.address,
+                contacts.work_type,
+                schedule.month,
+                schedule.day,
+                schedule.year,
+                schedule.hour,
+                schedule.minute
+            FROM
+                contacts
+            JOIN
+                schedule ON contacts.contacts_id = schedule.contacts_id
+            WHERE
+                contacts.member_id = ?""", (session['user_id'],)).fetchall()
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -181,16 +198,84 @@ def draft():
 def proposals():
      return render_template('proposals.html')
 
-@app.route('/schedule')
+@app.route('/schedule', methods=["GET", "POST"])
+@login_required
 def schedule():
-     return render_template('schedule.html')
+    c = None
+    try:
+        db = get_db()
+        c = db.cursor()
+     
+        options = c.execute("SELECT first_name || ' ' || last_name AS full_name FROM contacts").fetchall()
+
+        # User reached route via POST (as by submitting a form via POST)
+        if request.method == "POST":        
+                # Extract form values
+            month_str = request.form.get("month")
+            day_str = request.form.get("day")
+            year_str = request.form.get("year")
+            hour_str = request.form.get("hour")
+            minute_str = request.form.get("minute")
+            contact_name = request.form.get("contact_name")
+
+            # Check if form values are not None
+            if month_str is None or day_str is None or year_str is None or hour_str is None or minute_str is None:
+                return apology("must provide date and time to schedule an appointment", 400)
+
+            # Convert form values to integers
+            month = int(month_str)
+            day = int(day_str)
+            year = int(year_str)
+            hour = int(hour_str)
+            minute = int(minute_str)
+            max_days = calendar.monthrange(year, month)[1]
+            contact_name = request.form.get("contact_name")
+
+            if not month or not day or not year or not hour or not minute:
+                return apology("must provide date and time to schedule an appointment", 400)
+            
+            elif month < 1 or month > 12 or day < 1 or day > max_days:
+                return apology("must provide a valid date", 403)
+            
+            elif hour < 1 or hour > 24 or minute < 1 or minute > 59:
+                return apology("must provide a valid time", 403)
+            
+            elif not contact_name:
+                return apology ("Please select a client to schedule")
+            
+            
+            # Fetch the contact_id
+            contact_name_row = c.execute(
+                "SELECT contacts_id FROM contacts WHERE first_name || ' ' || last_name = ?", (contact_name,)
+            ).fetchone()
+
+            # Check if the contact exists
+            if contact_name_row is not None:
+                contact_id = contact_name_row[0]  # Extract the value from the row
+
+            c.execute(
+                "INSERT INTO schedule (month, day, year, hour, minute, contacts_id) VALUES(?,?,?,?,?,?)",
+                (month, day, year, hour, minute, contact_id))
+            db.commit()
+
+            return redirect("/home")
+        else:
+            return render_template('schedule.html', options = options)
+        
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+
+ 
 
 @app.route('/clients')
 @login_required
 def clients():
      return render_template('clients.html')
 
-@app.route('/new_client', methods=["GET", "POST"])
+@app.route('/new_client')
 @login_required
 def new_client():
     print("hello")

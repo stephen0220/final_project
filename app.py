@@ -514,6 +514,70 @@ def create_account():
     else:
         return render_template("create_account.html")
     
+@app.route("/password", methods=["GET", "POST"])
+def password():
+    """Change password"""
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+        # Ensure username was submitted
+        if not request.form.get("username"):
+            return apology("must provide username", 400)
+
+        # Query database for username
+        rows = db.execute(
+            "SELECT * FROM users WHERE username = ?", request.form.get("username")
+        )
+
+        # Ensure username exists and password
+        if len(rows) == 0:
+            return apology("Must place valid username", 400)
+
+        # Ensure password was submitted
+        elif not request.form.get("password"):
+            return apology("must provide password", 400)
+
+        # Ensure new password was submitted
+        elif not request.form.get("new_password") or request.form.get(
+            "new_password"
+        ) == request.form.get("password"):
+            return apology("must provide new password", 400)
+
+        # Ensure confirmation for new password was submitted
+        elif not request.form.get("confirmation"):
+            return apology("must confirm password", 400)
+
+        # Ensure password and confirmation match
+        elif request.form.get("new_password") != request.form.get("confirmation"):
+            return apology("passwords must match", 400)
+
+        # Query database for username
+        # db.execute("DELETE FROM users WHERE username = ?", request.form.get("username"))
+
+        # Insert username new password into database
+        db.execute(
+            "UPDATE users SET hash = ? WHERE username = ?",
+            generate_password_hash(request.form.get("new_password")),
+            request.form.get("username"),
+        )
+
+        # Query database for newly inserted user
+        db.execute(
+            "SELECT * FROM users WHERE username = ?", request.form.get("username")
+        )
+
+        # Remember which user has logged in
+        session["user_id"] = rows[0]["id"]
+
+        # Redirect user to home page
+        return redirect("/")
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("password.html")
+
+
+    
 
 if __name__ == '__main__':
     app.run(debug=True)

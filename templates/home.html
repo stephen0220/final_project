@@ -1,34 +1,33 @@
 {% extends "layout.html" %}
 
-{% block h1 %}
-    Home
-{% endblock %}
-
 {% block main %}
     <h2>Welcome to our scheduling platform!</h2>
-    <h2>We will display a list of clients and an "Add Client" button</h2>
+    <h2>
+        Please see a list of your clients and at which stage they are in
+        <br>
+        Click "New Client" in the navigation to manually add a client!
+    </h2>
     <br>
     <br>
     <div class="container clients">
         <div class="row">
-            <div class="col-md-4 mb-4">
-                <h2>New Clients</h2>
-                {% for client in clients%}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
-                        <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
-                        <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
+                <div>
+                    <h2>New Clients</h2>
+                    {% for client in clients%}
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
+                            <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
+                            <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
+                            <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
+                            <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
+                        </div>
                     </div>
-                {% endfor %}
-                </div>
-            </div>
-            
+                    {% endfor %}
+                </div>    
         </div>
         <div class="row">
-            <div class="col-md-4 mb-4">
+            <div>
                 <h2>Estimate Scheduled</h2>
                 <div class="card">
                     <div class="card-body">
@@ -40,10 +39,10 @@
                     </div>
                 </div>
             </div>
-            
         </div>
+            
         <div class="row">
-            <div class="col-md-4 mb-4">
+            <div>
                 <h2>Estimate in Draft</h2>
                 <div class="card">
                     <div class="card-body">
@@ -58,23 +57,9 @@
             
         </div>
         <div class="row">
-            <div class="col-md-4 mb-4">
+            <div>
                 <h2>Estimate Sent</h2>
                 <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
                     <div class="card-body">
                         <h5 class="card-title">First and Last Name</h5>
                         <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
@@ -86,64 +71,7 @@
             </div>
             
         </div>
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <h2>Estimate Sent</h2>
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <h2>Estimate Sent</h2>
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
+        
     </div>
    
 {% endblock %}

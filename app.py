@@ -6,6 +6,7 @@ import sqlite3
 import re
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.secret_key = 'a;sldkfjghtyrueiwoqp1029384756' 
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"

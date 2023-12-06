@@ -1,9 +1,44 @@
 {% extends "layout.html" %}
 
-{% block h1 %}
+{% block title %}
     Schedule
 {% endblock %}
 
 {% block main %}
-    <h2>We will display a list schedule for client estimates</h2>
+<div class="container mt-5">
+    <form action="{{url_for('schedule')}}" method="post">
+      <div class="form-row">
+        <div class="form-group col-md-6">
+            <label for="month">Select Month:</label>
+            <input type="number" id="month" name="month" min="1" max="12" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="day">Select Day:</label>
+            <input type="number" id="day" name="day" min="1" max="31" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-6">
+            <label for="year">Select Year:</label>
+            <input type="number" id="year" name="year" required>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="time">Select Time (Military Time):</label>
+            <input type="number" id="hour" name="hour" min="1" max="24" required>
+            <input type="number" id="minute" name="minute" min="1" max="59" required>
+        </div>
+      </div>
+  
+      <div class="form-group"></div>
+      <label for="selectOption">Select a Client:</label>
+      <select name="contact_name" id="contact_name">
+        {% for option in options %}
+            <option value="{{ option.full_name }}">{{ option.full_name }}</option>
+        {% endfor %}
+        </select>
+        </div>
+  
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
 {% endblock %}

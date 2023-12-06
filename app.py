@@ -4,6 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 import sqlite3
 import re
+from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = 'a;sldkfjghtyrueiwoqp1029384756' 
@@ -156,7 +157,6 @@ def index():
     return render_template("index.html", options=options)
 
 @app.route('/home')
-
 def home():
     c = None
     try:
@@ -164,7 +164,46 @@ def home():
         c = db.cursor()
 
         # Code for the home page after member login
-        clients = c.execute("SELECT * FROM contacts WHERE member_id = ?", (session['user_id'],)).fetchall()
+        clients = c.execute("""
+            SELECT
+                contacts.first_name,
+                contacts.last_name,
+                contacts.address,
+                contacts.work_type,
+                schedule.month,
+                schedule.day,
+                schedule.year,
+                schedule.hour,
+                schedule.minute
+            FROM
+                contacts
+            LEFT JOIN  -- Use LEFT JOIN to include contacts without a schedule
+                schedule ON contacts.contacts_id = schedule.contacts_id
+            WHERE
+                contacts.member_id = ?""", (session['user_id'],)).fetchall()
+
+        # Execute the second query with the cursor
+        c.execute("SELECT first_name FROM contacts WHERE member_id = ?", (session['user_id'],))
+
+        # Fetch the results after executing the query
+        contacts = c.fetchall()
+
+        no_schedule = []
+
+        # Print the populated array
+        for client in clients:
+            print(client[0])
+        print("Length of clients:", len(clients))
+
+        for contact in contacts:
+            print(f"Checking {contact[0]}")
+            if contact[0] not in [client[0] for client in clients]:
+                no_schedule.append(contact)
+                print(f"Added {contact[0]} to no_schedule")
+
+        print("Number of clients without schedule values:", len(no_schedule))
+        print("Number of total clients:", len(contacts))
+
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -172,6 +211,7 @@ def home():
     finally:
         c.close()
     return render_template("home.html", clients=clients)
+
 
 @app.route('/draft')
 def draft():
@@ -181,16 +221,107 @@ def draft():
 def proposals():
      return render_template('proposals.html')
 
-@app.route('/schedule')
+@app.route('/schedule', methods=["GET", "POST"])
+@login_required
 def schedule():
-     return render_template('schedule.html')
+
+    c = None
+    try:
+        db = get_db()
+        c = db.cursor()
+
+        options = c.execute("SELECT first_name || ' ' || last_name AS full_name FROM contacts").fetchall()
+
+        # User reached route via POST (as by submitting a form via POST)
+        if request.method == "POST":        
+                # Extract form values
+            month_str = request.form.get("month")
+            day_str = request.form.get("day")
+            year_str = request.form.get("year")
+            hour_str = request.form.get("hour")
+            minute_str = request.form.get("minute")
+            contact_name = request.form.get("contact_name")
+
+
+            # Convert form values to integers
+            month = int(month_str)
+            day = int(day_str)
+            year = int(year_str)
+            hour = int(hour_str)
+            minute = int(minute_str)
+            max_days = (datetime(year, month + 1, 1) - datetime(year, month, 1)).days
+            contact_name = request.form.get("contact_name")
+
+            if not month or not day or not year or not hour or not minute:
+                return apology("must provide date and time to schedule an appointment", 400)
+
+            elif month < 1 or month > 12 or day < 1 or day > max_days:
+                return apology("must provide a valid date", 403)
+
+            elif hour < 1 or hour > 24 or minute < 1 or minute > 59:
+                return apology("must provide a valid time", 403)
+
+            elif not contact_name:
+                return apology ("Please select a client to schedule")
+
+
+            # Fetch the contact_id
+            contact_name_row = c.execute(
+                "SELECT contacts_id FROM contacts WHERE first_name || ' ' || last_name = ?", (contact_name,)
+            ).fetchone()
+
+            # Check if the contact exists
+            if contact_name_row is not None:
+                contact_id = contact_name_row[0]  # Extract the value from the row
+            else:
+                return apology("no client found")
+            
+            existing_client = c.execute(
+                "SELECT * FROM schedule WHERE contacts_id = ?",
+                (contact_id,)
+            ).fetchone()
+
+            # Check to see if client already exists
+            if existing_client:
+                return apology("client has already been scheduled", 400)
+            
+            existing_booking = c.execute(
+            """SELECT * FROM schedule
+            JOIN contacts ON schedule.contacts_id = contacts.contacts_id
+            JOIN members ON contacts.member_id = members.member_id
+            WHERE schedule.month = ? AND schedule.day = ? AND schedule.year = ? AND schedule.hour = ?
+            AND schedule.minute = ? AND members.member_id = ?""",
+            (month, day, year, hour, minute, session['user_id'])
+            ).fetchone()
+
+            # Check to see if schedule is open
+            if existing_booking:
+                return apology("No availability! Please select a different time", 400)
+
+            c.execute(
+                "INSERT INTO schedule (month, day, year, hour, minute, contacts_id) VALUES(?,?,?,?,?,?)",
+                (month, day, year, hour, minute, contact_id))
+            db.commit()
+
+            return redirect("/home")
+        else:
+            return render_template('schedule.html', options = options)
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+
+
+ 
 
 @app.route('/clients')
 @login_required
 def clients():
      return render_template('clients.html')
 
-@app.route('/new_client', methods=["GET", "POST"])
+@app.route('/new_client', methods = ["GET", "POST"])
 @login_required
 def new_client():
     print("hello")
@@ -227,6 +358,16 @@ def new_client():
         try:
             db = get_db()
             c = db.cursor()
+
+            # Query contacts table for client
+            existing_client = c.execute(
+                "SELECT * FROM contacts WHERE first_name = ? AND last_name = ? AND member_id = ?",
+                (first_name, last_name, session['user_id'])
+            ).fetchone()
+
+            # Check to see if client already exists
+            if existing_client:
+                return apology("client has already been added", 400)
 
             c.execute(
                 "INSERT INTO contacts (first_name, last_name, phone_number, email, address, work_type, member_id) VALUES(?,?,?,?,?,?,?)",
@@ -372,6 +513,70 @@ def create_account():
 
     else:
         return render_template("create_account.html")
+    
+@app.route("/password", methods=["GET", "POST"])
+def password():
+    """Change password"""
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+        # Ensure username was submitted
+        if not request.form.get("username"):
+            return apology("must provide username", 400)
+
+        # Query database for username
+        rows = db.execute(
+            "SELECT * FROM users WHERE username = ?", request.form.get("username")
+        )
+
+        # Ensure username exists and password
+        if len(rows) == 0:
+            return apology("Must place valid username", 400)
+
+        # Ensure password was submitted
+        elif not request.form.get("password"):
+            return apology("must provide password", 400)
+
+        # Ensure new password was submitted
+        elif not request.form.get("new_password") or request.form.get(
+            "new_password"
+        ) == request.form.get("password"):
+            return apology("must provide new password", 400)
+
+        # Ensure confirmation for new password was submitted
+        elif not request.form.get("confirmation"):
+            return apology("must confirm password", 400)
+
+        # Ensure password and confirmation match
+        elif request.form.get("new_password") != request.form.get("confirmation"):
+            return apology("passwords must match", 400)
+
+        # Query database for username
+        # db.execute("DELETE FROM users WHERE username = ?", request.form.get("username"))
+
+        # Insert username new password into database
+        db.execute(
+            "UPDATE users SET hash = ? WHERE username = ?",
+            generate_password_hash(request.form.get("new_password")),
+            request.form.get("username"),
+        )
+
+        # Query database for newly inserted user
+        db.execute(
+            "SELECT * FROM users WHERE username = ?", request.form.get("username")
+        )
+
+        # Remember which user has logged in
+        session["user_id"] = rows[0]["id"]
+
+        # Redirect user to home page
+        return redirect("/")
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("password.html")
+
+
     
 
 if __name__ == '__main__':

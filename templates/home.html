@@ -19,8 +19,15 @@
                         <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
                         <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
-                        {{client.hour}}:{{client.minute}}</p>
+                        <p class="card-text"><strong>Schedule Date:</strong>
+                        <p class="card-text"><strong>Schedule Date:</strong>
+                            {% if client.month and client.day and client.year and client.hour and client.minute %}
+                                {{client.month}}/{{client.day}}/{{client.year}}<br>
+                                {{client.hour}}:{{client.minute}}
+                            {% else %}
+                                <a href="/schedule" class="btn btn-primary">Set Schedule</a>
+                            {% endif %}
+                            </p>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                     </div>
                 {% endfor %}

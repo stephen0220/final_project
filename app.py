@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required
 import sqlite3
 import re
-import calendar
+from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = 'a;sldkfjghtyrueiwoqp1029384756' 
@@ -157,7 +157,6 @@ def index():
     return render_template("index.html", options=options)
 
 @app.route('/home')
-
 def home():
     c = None
     try:
@@ -178,10 +177,33 @@ def home():
                 schedule.minute
             FROM
                 contacts
-            JOIN
+            LEFT JOIN  -- Use LEFT JOIN to include contacts without a schedule
                 schedule ON contacts.contacts_id = schedule.contacts_id
             WHERE
                 contacts.member_id = ?""", (session['user_id'],)).fetchall()
+
+        # Execute the second query with the cursor
+        c.execute("SELECT first_name FROM contacts WHERE member_id = ?", (session['user_id'],))
+
+        # Fetch the results after executing the query
+        contacts = c.fetchall()
+
+        no_schedule = []
+
+        # Print the populated array
+        for client in clients:
+            print(client[0])
+        print("Length of clients:", len(clients))
+
+        for contact in contacts:
+            print(f"Checking {contact[0]}")
+            if contact[0] not in [client[0] for client in clients]:
+                no_schedule.append(contact)
+                print(f"Added {contact[0]} to no_schedule")
+
+        print("Number of clients without schedule values:", len(no_schedule))
+        print("Number of total clients:", len(contacts))
+
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -189,6 +211,7 @@ def home():
     finally:
         c.close()
     return render_template("home.html", clients=clients)
+
 
 @app.route('/draft')
 def draft():
@@ -201,11 +224,12 @@ def proposals():
 @app.route('/schedule', methods=["GET", "POST"])
 @login_required
 def schedule():
+
     c = None
     try:
         db = get_db()
         c = db.cursor()
-     
+
         options = c.execute("SELECT first_name || ' ' || last_name AS full_name FROM contacts").fetchall()
 
         # User reached route via POST (as by submitting a form via POST)
@@ -218,9 +242,6 @@ def schedule():
             minute_str = request.form.get("minute")
             contact_name = request.form.get("contact_name")
 
-            # Check if form values are not None
-            if month_str is None or day_str is None or year_str is None or hour_str is None or minute_str is None:
-                return apology("must provide date and time to schedule an appointment", 400)
 
             # Convert form values to integers
             month = int(month_str)
@@ -228,22 +249,22 @@ def schedule():
             year = int(year_str)
             hour = int(hour_str)
             minute = int(minute_str)
-            max_days = calendar.monthrange(year, month)[1]
+            max_days = (datetime(year, month + 1, 1) - datetime(year, month, 1)).days
             contact_name = request.form.get("contact_name")
 
             if not month or not day or not year or not hour or not minute:
                 return apology("must provide date and time to schedule an appointment", 400)
-            
+
             elif month < 1 or month > 12 or day < 1 or day > max_days:
                 return apology("must provide a valid date", 403)
-            
+
             elif hour < 1 or hour > 24 or minute < 1 or minute > 59:
                 return apology("must provide a valid time", 403)
-            
+
             elif not contact_name:
                 return apology ("Please select a client to schedule")
-            
-            
+
+
             # Fetch the contact_id
             contact_name_row = c.execute(
                 "SELECT contacts_id FROM contacts WHERE first_name || ' ' || last_name = ?", (contact_name,)
@@ -252,6 +273,30 @@ def schedule():
             # Check if the contact exists
             if contact_name_row is not None:
                 contact_id = contact_name_row[0]  # Extract the value from the row
+            else:
+                return apology("no client found")
+            
+            existing_client = c.execute(
+                "SELECT * FROM schedule WHERE contacts_id = ?",
+                (contact_id,)
+            ).fetchone()
+
+            # Check to see if client already exists
+            if existing_client:
+                return apology("client has already been scheduled", 400)
+            
+            existing_booking = c.execute(
+            """SELECT * FROM schedule
+            JOIN contacts ON schedule.contacts_id = contacts.contacts_id
+            JOIN members ON contacts.member_id = members.member_id
+            WHERE schedule.month = ? AND schedule.day = ? AND schedule.year = ? AND schedule.hour = ?
+            AND schedule.minute = ? AND members.member_id = ?""",
+            (month, day, year, hour, minute, session['user_id'])
+            ).fetchone()
+
+            # Check to see if schedule is open
+            if existing_booking:
+                return apology("No availability! Please select a different time", 400)
 
             c.execute(
                 "INSERT INTO schedule (month, day, year, hour, minute, contacts_id) VALUES(?,?,?,?,?,?)",
@@ -261,12 +306,13 @@ def schedule():
             return redirect("/home")
         else:
             return render_template('schedule.html', options = options)
-        
+
     except Exception as e:
         return f"Error: {str(e)}"
 
     finally:
         c.close()
+
 
  
 
@@ -275,7 +321,7 @@ def schedule():
 def clients():
      return render_template('clients.html')
 
-@app.route('/new_client')
+@app.route('/new_client', methods = ["GET", "POST"])
 @login_required
 def new_client():
     print("hello")
@@ -312,6 +358,16 @@ def new_client():
         try:
             db = get_db()
             c = db.cursor()
+
+            # Query contacts table for client
+            existing_client = c.execute(
+                "SELECT * FROM contacts WHERE first_name = ? AND last_name = ? AND member_id = ?",
+                (first_name, last_name, session['user_id'])
+            ).fetchone()
+
+            # Check to see if client already exists
+            if existing_client:
+                return apology("client has already been added", 400)
 
             c.execute(
                 "INSERT INTO contacts (first_name, last_name, phone_number, email, address, work_type, member_id) VALUES(?,?,?,?,?,?,?)",

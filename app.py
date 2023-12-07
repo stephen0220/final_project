@@ -40,7 +40,7 @@ tables = [
         address TEXT NOT NULL,
         work_type TEXT NOT NULL,
         price INTEGER,
-        status TEXT CHECK (status IN ('lost','won')),
+        status TEXT CHECK (status IN ('draft', 'sent', 'won', 'lost')),
         member_id INTEGER,
         FOREIGN KEY (member_id) REFERENCES members(member_id)
     );""",
@@ -185,13 +185,21 @@ def home():
         new = []
         scheduled = []
         draft = []
-        #sent = []
+        sent = []
         #won = []
 
+         
 
         
         for client in clients:
             new.append(client)
+
+            year = None
+            month = None
+            day = None
+            hour = None
+            minute = None
+
             if client['month'] is not None:
                 scheduled.append(client)
                 if client in new:
@@ -203,12 +211,21 @@ def home():
                 hour = int(client['hour'])
                 minute = int(client['minute'])
 
-            if time_passed(year, month, day, hour, minute) == True: 
+            if client["status"] == 'draft' or (client["status"] is None and None not in (year, month, day, hour, minute) and time_passed(year, month, day, hour, minute) == True): 
                 draft.append(client)
                 if client in scheduled:
                     scheduled.remove(client)
+
+            if client["status"] == 'sent':
+                sent.append(client)
+                if client in draft:
+                    draft.remove(client)
+
             
-        time_passed(2023, 11, 7, 12, 30)
+            
+            
+            
+        
         print(len(new))
         print(len(scheduled))
         print(len(draft))
@@ -221,7 +238,29 @@ def home():
 
     finally:
         c.close()
-    return render_template("home.html", new = new, clients=clients, scheduled = scheduled, draft = draft)
+    return render_template("home.html", new = new, clients=clients, scheduled = scheduled, draft = draft, sent = sent)
+
+@app.route('/update_status', methods=['POST'])
+def update_status():
+    try:
+        db = get_db()
+        c = db.cursor()
+
+        selected_id = int(request.form.get('client_id'))
+        selected_status = request.form.get('status')
+
+        # Update the 'status' in the 'contacts' table
+        c.execute("UPDATE contacts SET status = ? WHERE contacts_id = ?", (selected_status, selected_id))
+        db.commit()
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+
+    return redirect('/home')
+
+
 
 @app.route('/delete_client', methods=['POST'])
 def delete_client():
@@ -246,7 +285,7 @@ def delete_client():
         c.close()
 
     print("Client deleted!")
-    return redirect("/home")
+    return redirect("/")
 
 
 @app.route('/schedule', methods=["GET", "POST"])
@@ -294,7 +333,7 @@ def schedule():
             #elif month < 1 or month > 12:
             #    return apology("must provide a valid month (1-12)", 403)
 
-            if time_passed(month, day, year, hour, minute) == True:
+            if time_passed(year, month, day, hour, minute) == True:
                 return apology("Time has already passed", 403)
 
             elif day < 1 or day > max_days:
@@ -602,22 +641,22 @@ def password():
             # db.execute("DELETE FROM users WHERE username = ?", request.form.get("username"))
 
             # Insert username new password into database
-            db.execute(
+            c.execute(
                 "UPDATE users SET hash = ? WHERE username = ?",
                 generate_password_hash(request.form.get("new_password")),
                 request.form.get("username"),
             )
 
             # Query database for newly inserted user
-            db.execute(
+            c.execute(
                 "SELECT * FROM users WHERE username = ?", request.form.get("username")
             )
 
             # Remember which user has logged in
-            session["user_id"] = rows[0]["id"]
+            session["user_id"] = rows[0]["member_id"]
 
             # Redirect user to home page
-            return redirect("/")
+            return redirect("/home")
 
             # User reached route via GET (as by clicking a link or via redirect)
             
@@ -628,6 +667,32 @@ def password():
             c.close()
     else:
         return render_template("password.html")
+    
+@app.route('/delete_member', methods=['POST'])
+def delete_member():
+    try:
+        db = get_db()
+        c = db.cursor()
+
+        removing = session['user_id']
+        print(f"Deleting client with contacts_id: {removing}")
+
+        c.execute(
+            "DELETE FROM members WHERE member_id = ?", (removing,)
+        )
+
+        db.commit()
+        print("Deletion successful")
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+
+    print("Account deleted!")
+    return redirect("/")
+
 
 
     

@@ -186,7 +186,9 @@ def home():
         scheduled = []
         draft = []
         sent = []
-        #won = []
+        won = []
+        lost = []
+        total = 0
 
          
 
@@ -199,6 +201,7 @@ def home():
             day = None
             hour = None
             minute = None
+            price = 0
 
             if client['month'] is not None:
                 scheduled.append(client)
@@ -218,8 +221,28 @@ def home():
 
             if client["status"] == 'sent':
                 sent.append(client)
+                if client in scheduled:
+                    scheduled.remove(client)
                 if client in draft:
                     draft.remove(client)
+
+            if client["status"] == 'won':
+                won.append(client)
+                if client in sent:
+                    sent.remove(client)
+                if client in scheduled:
+                    scheduled.remove(client)
+
+            if client["status"] == 'lost':
+                lost.append(client)
+                if client in sent:
+                    sent.remove(client)
+
+            if client["price"] is not None and client["price"] != 0:
+                price = int(client["price"])
+                total += price
+
+
 
             
             
@@ -229,8 +252,8 @@ def home():
         print(len(new))
         print(len(scheduled))
         print(len(draft))
-        #print(won)
-        #print(lost)
+        print(len(won))
+        print(len(lost))
 
 
     except Exception as e:
@@ -238,7 +261,7 @@ def home():
 
     finally:
         c.close()
-    return render_template("home.html", new = new, clients=clients, scheduled = scheduled, draft = draft, sent = sent)
+    return render_template("home.html", new = new, clients=clients, scheduled = scheduled, draft = draft, sent = sent, won = won, lost = lost, total = total)
 
 @app.route('/update_status', methods=['POST'])
 def update_status():
@@ -259,6 +282,27 @@ def update_status():
         c.close()
 
     return redirect('/home')
+
+@app.route('/add_price', methods=['POST'])
+def add_price():
+    try:
+        db = get_db()
+        c = db.cursor()
+
+        selected_id = int(request.form.get('client_id'))
+        price = int(request.form.get('price'))
+
+        # Update the 'status' in the 'contacts' table
+        c.execute("UPDATE contacts SET price = ? WHERE contacts_id = ?", (price, selected_id))
+        db.commit()
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+
+    return redirect('/home')
+
 
 
 
@@ -285,7 +329,7 @@ def delete_client():
         c.close()
 
     print("Client deleted!")
-    return redirect("/")
+    return redirect("/home")
 
 
 @app.route('/schedule', methods=["GET", "POST"])

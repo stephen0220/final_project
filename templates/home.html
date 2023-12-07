@@ -29,9 +29,12 @@
                             {% endif %}
                             </p>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
+                    </div>
+                </div>
+                {% endfor %}
                 <div>
                     <h2>New Clients</h2>
-                    {% for client in clients%}
+                    {% for client in clients %}
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
@@ -43,9 +46,9 @@
                     </div>
                     {% endfor %}
                 </div>    
-        </div>
+            </div>
         <div class="row">
-            <div>
+            <div class="col-md-4 mb-4">
                 <h2>Estimate Scheduled</h2>
                 <div class="card">
                     <div class="card-body">
@@ -60,7 +63,7 @@
         </div>
             
         <div class="row">
-            <div>
+            <div class="col-md-4 mb-4">
                 <h2>Estimate in Draft</h2>
                 <div class="card">
                     <div class="card-body">
@@ -69,13 +72,22 @@
                         <p class="card-text"><strong>Type of Work:</strong> Painting</p>
                         <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
+                        <form action="POST">
+                            <input type="radio" name="draft" id="draft">
+                            <label for="draft">In Draft</label>
+                            <br>
+                            <input type="radio" name="sent" id="sent">
+                            <label for="sent">Estimate Sent</label>
+                            <br>
+                            <button type="submit" class="btn btn-primary">Update</button>
+                        </form>
                     </div>
                 </div>
             </div>
             
         </div>
         <div class="row">
-            <div>
+            <div class="col-md-4 mb-4">
                 <h2>Estimate Sent</h2>
                 <div class="card">
                     <div class="card-body">
@@ -84,6 +96,15 @@
                         <p class="card-text"><strong>Type of Work:</strong> Painting</p>
                         <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
+                        <form action="POST">
+                            <input type="radio" name="draft" id="draft">
+                            <label for="draft">In Draft</label>
+                            <br>
+                            <input type="radio" name="sent" id="sent">
+                            <label for="sent">Estimate Sent</label>
+                            <br>
+                            <button type="submit" class="btn btn-primary">Update</button>
+                        </form>
                     </div>
                 </div>
             </div>

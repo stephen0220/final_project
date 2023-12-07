@@ -1,7 +1,7 @@
 from flask import Flask, g, flash, redirect, request, session, redirect, url_for, render_template, request
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import apology, login_required
+from helpers import apology, login_required, time_passed
 import sqlite3
 import re
 from datetime import datetime
@@ -156,13 +156,6 @@ def index():
 @app.route('/home')
 def home():
     c = None
-    now = datetime.now()
-    timestamp = now.timestamp()
-    timestamp_year = datetime.utcfromtimestamp(timestamp).year
-    timestamp_month = datetime.utcfromtimestamp(timestamp).month
-    timestamp_day= datetime.utcfromtimestamp(timestamp).day
-    timestamp_hour= datetime.utcfromtimestamp(timestamp).hour
-    timestamp_minute = datetime.utcfromtimestamp(timestamp).minute
     try:
         db = get_db()
         c = db.cursor()
@@ -210,18 +203,12 @@ def home():
                 hour = int(client['hour'])
                 minute = int(client['minute'])
 
-            if (
-                timestamp_year > year or
-                (timestamp_year == year and timestamp_month > month) or
-                (timestamp_year == year and timestamp_month == month and timestamp_day > day) or
-                (timestamp_year == year and timestamp_month == month and timestamp_day == day and timestamp_hour > hour) or
-                (timestamp_year == year and timestamp_month == month and timestamp_day == day and timestamp_hour == hour and timestamp_minute > minute)
-            ):
+            if time_passed(year, month, day, hour, minute) == True: 
                 draft.append(client)
                 if client in scheduled:
                     scheduled.remove(client)
             
-
+        time_passed(2023, 11, 7, 12, 30)
         print(len(new))
         print(len(scheduled))
         print(len(draft))
@@ -307,7 +294,10 @@ def schedule():
             #elif month < 1 or month > 12:
             #    return apology("must provide a valid month (1-12)", 403)
 
-            if day < 1 or day > max_days:
+            if time_passed(month, day, year, hour, minute) == True:
+                return apology("Time has already passed", 403)
+
+            elif day < 1 or day > max_days:
                 return apology("must provide a valid day", 403)
                 
             elif hour < 1 or hour > 24 or minute < 0 or minute > 59:

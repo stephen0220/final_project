@@ -54,6 +54,7 @@ def time_passed(year, month, day, hour, minute):
     timestamp_day= datetime.utcfromtimestamp(timestamp).day
     timestamp_hour= datetime.utcfromtimestamp(timestamp).hour
     timestamp_minute = datetime.utcfromtimestamp(timestamp).minute
+    print(now)
 
     if (
         timestamp_year > year or

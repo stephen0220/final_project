@@ -21,16 +21,15 @@
                         <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
                         <a href="/schedule" class="btn btn-primary">Set Schedule</a>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                     </div>
                     <form action="{{ url_for('delete_client') }}" method="post">
                         <input type="hidden" name="contact_id" value="{{client.contacts_id}}">
+                        
                         <button class="btn btn-primary" type="submit">Delete Client</button>
                     </form>
                 </div>
                 {% endfor %}
                 <div>
-                    
                 </div>    
             </div>
         <div class="row">
@@ -44,7 +43,6 @@
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
                         <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
                             {{client.hour}}:{{client.minute}}</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                         
                     </div>
                     <form action="{{ url_for('update_status') }}" method="post">
@@ -77,7 +75,6 @@
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
                         <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
                             {{client.hour}}:{{client.minute}}</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                         <form action="{{ url_for('update_status') }}" method="post">
                             <input type="radio" name="status" value="draft">
                             <label for="draft">In Draft</label>
@@ -104,7 +101,6 @@
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
                         <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
                             {{client.hour}}:{{client.minute}}</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                         <form action="{{ url_for('update_status') }}" method="post">
                             <input type="radio" name="status" value="won">
                             <label for="draft">Quote Accepted</label>
@@ -132,7 +128,6 @@
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
                         <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
                             {{client.hour}}:{{client.minute}}</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                         {% if client.price %}
                         <p class="card-text"><strong>Price:</strong> $ {{client.price}}</p>
                         {% else %}
@@ -160,7 +155,6 @@
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
                         <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
                             {{client.hour}}:{{client.minute}}</p>
-                        <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                     </div>
                     <form action="{{ url_for('delete_client') }}" method="post">
                         <input type="hidden" name="contact_id" value="{{client.contacts_id}}">

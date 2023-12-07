@@ -88,6 +88,7 @@ def after_request(response):
 
 @app.route('/', methods=["GET", "POST"])
 def index():
+    session.clear()
     c = None
     options = None  # Define options outside the try block
 
@@ -655,13 +656,16 @@ def password():
 
 
             # Query database for username
-            rows = c.execute(
-                "SELECT * FROM users WHERE username = ?", request.form.get("username")
+            c.execute(
+                "SELECT * FROM members WHERE username = ?",
+                (request.form.get("username"),)
             )
 
-            # Ensure username exists and password
-            if len(rows) == 0:
-                return apology("Must place valid username", 400)
+            # Fetch the result (one row)
+            row = c.fetchone()
+            # Ensure username exists
+            if row is None:
+                return apology("Must provide a valid username", 400)
 
             # Ensure password was submitted
             elif not request.form.get("password"):
@@ -680,32 +684,38 @@ def password():
             # Ensure password and confirmation match
             elif request.form.get("new_password") != request.form.get("confirmation"):
                 return apology("passwords must match", 400)
-
-            # Query database for username
-            # db.execute("DELETE FROM users WHERE username = ?", request.form.get("username"))
-
             # Insert username new password into database
             c.execute(
-                "UPDATE users SET hash = ? WHERE username = ?",
-                generate_password_hash(request.form.get("new_password")),
-                request.form.get("username"),
+                "UPDATE members SET hash = ? WHERE username = ?",
+                (generate_password_hash(request.form.get("new_password")), 
+                request.form.get("username")
+                ),
             )
 
-            # Query database for newly inserted user
+            db.commit()
+
+            # Query database for username
             c.execute(
-                "SELECT * FROM users WHERE username = ?", request.form.get("username")
+                "SELECT * FROM members WHERE username = ?",
+                (request.form.get("username"),)
             )
+
+            # Fetch the result (one row)
+            row = c.fetchone()
+
+            # Ensure username exists and password
+            if row is None:
+                return apology("Must provide valid username", 400)
 
             # Remember which user has logged in
-            session["user_id"] = rows[0]["member_id"]
+            session["user_id"] = row["member_id"]
 
             # Redirect user to home page
             return redirect("/home")
-
             # User reached route via GET (as by clicking a link or via redirect)
             
         except Exception as e:
-                return f"Error: {str(e)}"
+            return f"Error: {str(e)}"
 
         finally:
             c.close()
@@ -720,6 +730,16 @@ def delete_member():
 
         removing = session['user_id']
         print(f"Deleting client with contacts_id: {removing}")
+
+        c.execute(
+            """DELETE FROM schedule
+            WHERE contacts_id IN (SELECT contacts_id FROM contacts WHERE member_id = ?)""",
+            (removing,)
+        )
+
+        c.execute(
+            """DELETE FROM contacts WHERE member_id = ?""", (removing,)
+        )
 
         c.execute(
             "DELETE FROM members WHERE member_id = ?", (removing,)

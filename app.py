@@ -1,7 +1,7 @@
 from flask import Flask, g, flash, redirect, request, session, redirect, url_for, render_template, request
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import apology, login_required
+from helpers import apology, login_required, time_passed
 import sqlite3
 import re
 from datetime import datetime
@@ -15,11 +15,11 @@ Session(app)
 
 # PLEASE LEAVE THIS COMMENTED UNTIL I AM FINISHED WITH EDITING THE TABLES!
 
-# Create Tables (Leave as commented once eschedule.db has been created after first run)
 conn = sqlite3.connect('eschedule.db')
 c = conn.cursor()
 
-'''tables = [ """CREATE TABLE members (
+tables = [
+    """CREATE TABLE IF NOT EXISTS members (
         member_id INTEGER PRIMARY KEY AUTOINCREMENT,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
@@ -29,8 +29,9 @@ c = conn.cursor()
         username TEXT NOT NULL,
         password TEXT NOT NULL,
         hash TEXT NOT NULL
-     );""",
-     """CREATE TABLE contacts (
+    );""",
+
+    """CREATE TABLE IF NOT EXISTS contacts (
         contacts_id INTEGER PRIMARY KEY,
         first_name TEXT NOT NULL,
         last_name TEXT NOT NULL,
@@ -38,35 +39,29 @@ c = conn.cursor()
         email TEXT NOT NULL,
         address TEXT NOT NULL,
         work_type TEXT NOT NULL,
+        price INTEGER,
+        status TEXT CHECK (status IN ('lost','won')),
         member_id INTEGER,
         FOREIGN KEY (member_id) REFERENCES members(member_id)
-     );""",
+    );""",
 
-     """CREATE TABLE schedule (
-         month INTEGER NOT NULL,
-         day INTEGER NOT NULL,
-         year INTEGER NOT NULL,
-         hour INTEGER CHECK (hour >= 1 AND hour < 24),
-         minute INTEGER CHECK (minute >= 1 AND minute < 60),
-         contacts_id INTEGER,
-         FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
-     );""",
-
-     """CREATE TABLE proposals (
-         price INTEGER,
-         description TEXT,
-         contacts_id INTEGER,
-         draft TEXT CHECK (draft IN ('draft','sent')),
-         FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
-     );"""
-
- ]
+    """CREATE TABLE IF NOT EXISTS schedule (
+        month INTEGER NOT NULL,
+        day INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        hour INTEGER CHECK (hour >= 1 AND hour < 24),
+        minute INTEGER CHECK (minute >= 1 AND minute < 60),
+        contacts_id INTEGER,
+        FOREIGN KEY (contacts_id) REFERENCES contacts(contacts_id)
+    );""",
+]
 
 for table in tables:
-     c.execute(table)
+    c.execute(table)
 
+# Commit the changes and close the connection
 conn.commit()
-conn.close'''
+conn.close()
 
 # Function to get the database connection
 def get_db():
@@ -157,6 +152,7 @@ def index():
 
     return render_template("index.html", options=options)
 
+
 @app.route('/home')
 def home():
     c = None
@@ -167,10 +163,13 @@ def home():
         # Code for the home page after member login
         clients = c.execute("""
             SELECT
+                contacts.contacts_id,
                 contacts.first_name,
                 contacts.last_name,
                 contacts.address,
                 contacts.work_type,
+                contacts.price,
+                contacts.status,
                 schedule.month,
                 schedule.day,
                 schedule.year,
@@ -182,28 +181,39 @@ def home():
                 schedule ON contacts.contacts_id = schedule.contacts_id
             WHERE
                 contacts.member_id = ?""", (session['user_id'],)).fetchall()
+        
+        new = []
+        scheduled = []
+        draft = []
+        #sent = []
+        #won = []
 
-        # Execute the second query with the cursor
-        c.execute("SELECT first_name FROM contacts WHERE member_id = ?", (session['user_id'],))
 
-        # Fetch the results after executing the query
-        contacts = c.fetchall()
-
-        no_schedule = []
-
-        # Print the populated array
+        
         for client in clients:
-            print(client[0])
-        print("Length of clients:", len(clients))
+            new.append(client)
+            if client['month'] is not None:
+                scheduled.append(client)
+                if client in new:
+                    new.remove(client)
 
-        for contact in contacts:
-            print(f"Checking {contact[0]}")
-            if contact[0] not in [client[0] for client in clients]:
-                no_schedule.append(contact)
-                print(f"Added {contact[0]} to no_schedule")
+                year = int(client['year'])
+                month = int(client['month'])
+                day = int(client['day'])
+                hour = int(client['hour'])
+                minute = int(client['minute'])
 
-        print("Number of clients without schedule values:", len(no_schedule))
-        print("Number of total clients:", len(contacts))
+            if time_passed(year, month, day, hour, minute) == True: 
+                draft.append(client)
+                if client in scheduled:
+                    scheduled.remove(client)
+            
+        time_passed(2023, 11, 7, 12, 30)
+        print(len(new))
+        print(len(scheduled))
+        print(len(draft))
+        #print(won)
+        #print(lost)
 
 
     except Exception as e:
@@ -211,16 +221,33 @@ def home():
 
     finally:
         c.close()
-    return render_template("home.html", clients=clients)
+    return render_template("home.html", new = new, clients=clients, scheduled = scheduled, draft = draft)
 
+@app.route('/delete_client', methods=['POST'])
+def delete_client():
+    try:
+        db = get_db()
+        c = db.cursor()
 
-@app.route('/draft')
-def draft():
-     return render_template('draft.html')
+        removing = request.form.get('contact_id')
+        print(f"Deleting client with contacts_id: {removing}")
 
-@app.route('/proposals')
-def proposals():
-     return render_template('proposals.html')
+        c.execute(
+            "DELETE FROM contacts WHERE contacts_id = ?", (removing,)
+        )
+
+        db.commit()
+        print("Deletion successful")
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+    finally:
+        c.close()
+
+    print("Client deleted!")
+    return redirect("/home")
+
 
 @app.route('/schedule', methods=["GET", "POST"])
 @login_required
@@ -244,6 +271,7 @@ def schedule():
             contact_name = request.form.get("contact_name")
 
 
+
             # Convert form values to integers
             month = int(month_str)
             day = int(day_str)
@@ -252,14 +280,27 @@ def schedule():
             minute = int(minute_str)
             max_days = (datetime(year, month + 1, 1) - datetime(year, month, 1)).days
             contact_name = request.form.get("contact_name")
+            
+            print(month)
+            print(day)
+            print (year)
+            print (hour)
+            print(minute)
+            print(max_days)
 
-            if not month or not day or not year or not hour or not minute:
-                return apology("must provide date and time to schedule an appointment", 400)
+            #if not month or not day or not year or not hour or not minute:
+            #    return apology("must provide date and time to schedule an appointment", 400)
 
-            elif month < 1 or month > 12 or day < 1 or day > max_days:
-                return apology("must provide a valid date", 403)
+            #elif month < 1 or month > 12:
+            #    return apology("must provide a valid month (1-12)", 403)
 
-            elif hour < 1 or hour > 24 or minute < 1 or minute > 59:
+            if time_passed(month, day, year, hour, minute) == True:
+                return apology("Time has already passed", 403)
+
+            elif day < 1 or day > max_days:
+                return apology("must provide a valid day", 403)
+                
+            elif hour < 1 or hour > 24 or minute < 0 or minute > 59:
                 return apology("must provide a valid time", 403)
 
             elif not contact_name:
@@ -521,59 +562,70 @@ def password():
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
-        # Ensure username was submitted
-        if not request.form.get("username"):
-            return apology("must provide username", 400)
+        try:
+            db = get_db()
+            c = db.cursor()
+            # Ensure username was submitted
+            if not request.form.get("username"):
+                return apology("must provide username", 400)
+        
 
-        # Query database for username
-        rows = db.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
 
-        # Ensure username exists and password
-        if len(rows) == 0:
-            return apology("Must place valid username", 400)
+            # Query database for username
+            rows = c.execute(
+                "SELECT * FROM users WHERE username = ?", request.form.get("username")
+            )
 
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            return apology("must provide password", 400)
+            # Ensure username exists and password
+            if len(rows) == 0:
+                return apology("Must place valid username", 400)
 
-        # Ensure new password was submitted
-        elif not request.form.get("new_password") or request.form.get(
-            "new_password"
-        ) == request.form.get("password"):
-            return apology("must provide new password", 400)
+            # Ensure password was submitted
+            elif not request.form.get("password"):
+                return apology("must provide password", 400)
 
-        # Ensure confirmation for new password was submitted
-        elif not request.form.get("confirmation"):
-            return apology("must confirm password", 400)
+            # Ensure new password was submitted
+            elif not request.form.get("new_password") or request.form.get(
+                "new_password"
+            ) == request.form.get("password"):
+                return apology("must provide new password", 400)
 
-        # Ensure password and confirmation match
-        elif request.form.get("new_password") != request.form.get("confirmation"):
-            return apology("passwords must match", 400)
+            # Ensure confirmation for new password was submitted
+            elif not request.form.get("confirmation"):
+                return apology("must confirm password", 400)
 
-        # Query database for username
-        # db.execute("DELETE FROM users WHERE username = ?", request.form.get("username"))
+            # Ensure password and confirmation match
+            elif request.form.get("new_password") != request.form.get("confirmation"):
+                return apology("passwords must match", 400)
 
-        # Insert username new password into database
-        db.execute(
-            "UPDATE users SET hash = ? WHERE username = ?",
-            generate_password_hash(request.form.get("new_password")),
-            request.form.get("username"),
-        )
+            # Query database for username
+            # db.execute("DELETE FROM users WHERE username = ?", request.form.get("username"))
 
-        # Query database for newly inserted user
-        db.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
+            # Insert username new password into database
+            db.execute(
+                "UPDATE users SET hash = ? WHERE username = ?",
+                generate_password_hash(request.form.get("new_password")),
+                request.form.get("username"),
+            )
 
-        # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
+            # Query database for newly inserted user
+            db.execute(
+                "SELECT * FROM users WHERE username = ?", request.form.get("username")
+            )
 
-        # Redirect user to home page
-        return redirect("/")
+            # Remember which user has logged in
+            session["user_id"] = rows[0]["id"]
 
-    # User reached route via GET (as by clicking a link or via redirect)
+            # Redirect user to home page
+            return redirect("/")
+
+            # User reached route via GET (as by clicking a link or via redirect)
+            
+        except Exception as e:
+                return f"Error: {str(e)}"
+
+        finally:
+            c.close()
     else:
         return render_template("password.html")
 

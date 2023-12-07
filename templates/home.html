@@ -13,64 +13,54 @@
         <div class="row">
             <div class="col-md-4 mb-4">
                 <h2>New Clients</h2>
-                {% for client in clients%}
+                {% for client in new %}
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
                         <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
                         <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
-                        <p class="card-text"><strong>Schedule Date:</strong>
-                        <p class="card-text"><strong>Schedule Date:</strong>
-                            {% if client.month and client.day and client.year and client.hour and client.minute %}
-                                {{client.month}}/{{client.day}}/{{client.year}}<br>
-                                {{client.hour}}:{{client.minute}}
-                            {% else %}
-                                <a href="/schedule" class="btn btn-primary">Set Schedule</a>
-                            {% endif %}
-                            </p>
+                        <a href="/schedule" class="btn btn-primary">Set Schedule</a>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                     </div>
+                    <form action="{{ url_for('delete_client') }}" method="post">
+                        <input type="hidden" name="contact_id" value="{{client.contacts_id}}">
+                        <button class="btn btn-primary" type="submit">Delete Client</button>
+                    </form>
                 </div>
                 {% endfor %}
                 <div>
-                    <h2>New Clients</h2>
-                    {% for client in clients %}
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
-                            <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
-                            <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
-                            <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
-                            <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
-                        </div>
-                    </div>
-                    {% endfor %}
+                    
                 </div>    
             </div>
         <div class="row">
             <div class="col-md-4 mb-4">
                 <h2>Estimate Scheduled</h2>
+                {% for client in scheduled %}
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
+                        <h5 class="card-title">{{client.first_name}} {{client.last_name}}</h5>
+                        <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
+                        <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
+                        <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
+                            {{client.hour}}:{{client.minute}}</p>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                     </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
             
         <div class="row">
             <div class="col-md-4 mb-4">
                 <h2>Estimate in Draft</h2>
+                {% for client in draft %}
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">First and Last Name</h5>
-                        <p class="card-text"><strong>Address:</strong><br> 17 Woodsview Drive <br> Garnet Valley, PA</p>
-                        <p class="card-text"><strong>Type of Work:</strong> Painting</p>
-                        <p class="card-text"><strong>Schedule Date:</strong> Painting</p>
+                        <h5 class="card-title">{{client.first_name}} {{client.last_name}}</h5>
+                        <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
+                        <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
+                        <p class="card-text"><strong>Schedule Date:</strong> {{client.month}}/{{client.day}}/{{client.year}}<br>
+                            {{client.hour}}:{{client.minute}}</p>
                         <p class="card-text"><strong>Upload PDF/View PDF:</strong> <button>View Quote</button></p>
                         <form action="POST">
                             <input type="radio" name="draft" id="draft">
@@ -83,8 +73,8 @@
                         </form>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            
         </div>
         <div class="row">
             <div class="col-md-4 mb-4">

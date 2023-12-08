@@ -2,6 +2,9 @@ Welcome to our EScheduler!
 This is a web app to help contractors keep track of their clients and contacts with scheduling
 and keeping track of how much money had been made with 'Jobs Accepted'
 
+Video here:
+https://youtu.be/yGW6L6Peh3o
+
 We installed several packages to make this work. Please run 'pip list' to make sure
 you have the following installed, and if not, here is a list to install:
 blinker            1.7.0
@@ -27,7 +30,7 @@ wheel              0.41.3
 navigate to the folder containing the app.py,
 then run in the terminal: Flask run
 
-We have code in app.py between lines **-** that create a database incase there isn't one already created
+We have code in app.py between lines 24-68 that create a database incase there isn't one already created
 
 ===== New Client =====
 

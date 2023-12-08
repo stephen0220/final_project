@@ -6,6 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required, time_passed
 import sqlite3
 import re
+import calendar
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -249,6 +250,8 @@ def home():
                 lost.append(client)
                 if client in sent:
                     sent.remove(client)
+                if client in scheduled:
+                    scheduled.remove(client)
             # If client is won, check to see if price quote is added to the value 'price' in the contacts table
             if client["price"] is not None and client["price"] != 0:
                 price = int(client["price"])
@@ -365,15 +368,19 @@ def schedule():
             year = int(year_str)
             hour = int(hour_str)
             minute = int(minute_str)
-            max_days = (datetime(year, month + 1, 1) - datetime(year, month, 1)).days
+            last_day_of_month = calendar.monthrange(year, month)[1]
             contact_name = request.form.get("contact_name")
         
             # Check validation for input
+            # Check if the month is in the valid range (1 to 12)
+            if month < 1 or month > 12:
+                return apology("month must be in 1..12", 403)
             # Check to see if datetime is in the future
             if time_passed(year, month, day, hour, minute) == True:
                 return apology("Time has already passed", 403)
+            
             # Check to see if the day is within the month length
-            elif day < 1 or day > max_days:
+            elif day < 1 or day > last_day_of_month:
                 return apology("must provide a valid day", 403)
             # Check to see if hour and minute are valid in Military Time  
             elif hour < 1 or hour > 24 or minute < 0 or minute > 59:

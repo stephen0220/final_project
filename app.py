@@ -383,7 +383,7 @@ def schedule():
             elif day < 1 or day > last_day_of_month:
                 return apology("must provide a valid day", 403)
             # Check to see if hour and minute are valid in Military Time  
-            elif hour < 1 or hour > 24 or minute < 0 or minute > 59:
+            elif hour < 0 or hour > 24 or minute < 0 or minute > 59:
                 return apology("must provide a valid time", 403)
             # Check to see if client name has been selected
             elif not contact_name:

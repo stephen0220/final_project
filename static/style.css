@@ -31,11 +31,18 @@ footer {
 
 .row {
     margin-right: 2em;
+    display: block;
+    width: 450px;
 }
 
 .card {
     box-shadow: 5px 5px 10px #000;
     margin-bottom: 1em;
+    width: 450px;
+}
+
+.card-body p {
+    text-wrap:wrap; 
 }
 
 h2 {

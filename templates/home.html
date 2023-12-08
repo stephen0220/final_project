@@ -11,27 +11,23 @@
     <h3>Total Income from Clients: <span class="total-money">$ {{total}}</span></h3>
     <br>
     <div class="container clients">
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <h2>New Clients</h2>
-                {% for client in new %}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
-                        <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
-                        <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
-                        <a href="/schedule" class="btn btn-primary linked-button">Set Schedule</a>
-                        <form action="{{ url_for('delete_client') }}" method="post">
-                            <input type="hidden" name="contact_id" value="{{client.contacts_id}}">
-                            
-                            <button class="btn btn-primary" type="submit">Delete Client</button>
-                        </form>
-                    </div>
+        <div class="row">           
+            <h2>New Clients</h2>
+            {% for client in new %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{client.first_name}}{{client.last_name}}</h5>
+                    <p class="card-text"><strong>Address:</strong><br> {{client.address}}</p>
+                    <p class="card-text"><strong>Type of Work:</strong> {{client.work_type}}</p>
+                    <a href="/schedule" class="btn btn-primary linked-button">Set Schedule</a>
+                    <form action="{{ url_for('delete_client') }}" method="post">
+                        <input type="hidden" name="contact_id" value="{{client.contacts_id}}">   
+                        <button class="btn btn-primary" type="submit">Delete Client</button>
+                    </form>
                 </div>
-                {% endfor %}
-                <div>
-                </div>    
             </div>
+            {% endfor %}              
+        </div>
         <div class="row">
             <div class="col-md-4 mb-4">
                 <h2>Estimate Scheduled</h2>
@@ -140,12 +136,20 @@
                             {{client.hour}}:{{client.minute}}</p>
                         {% if client.price %}
                         <p class="card-text"><strong>Price:</strong> $ {{client.price}}</p>
+                        <form action="{{ url_for('delete_client') }}" method="post">
+                            <input type="hidden" name="contact_id" value="{{client.contacts_id}}">   
+                            <button class="btn btn-primary" type="submit">Delete Client</button>
+                        </form>
                         {% else %}
                         <form class = "price" action="{{ url_for('add_price') }}" method="post">
                             <input type="number" id = "price" name="price">
                             <label for="price">Job Price</label>
                             <input type="hidden" name="client_id" value="{{ client['contacts_id'] }}">
                             <button type="submit" class="btn btn-primary">Add Price</button>
+                        </form>
+                        <form action="{{ url_for('delete_client') }}" method="post">
+                            <input type="hidden" name="contact_id" value="{{client.contacts_id}}">   
+                            <button class="btn btn-primary" type="submit">Delete Client</button>
                         </form>
                         {% endif %}
                     </div>

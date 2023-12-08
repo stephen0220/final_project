@@ -1,15 +1,8 @@
-import csv
 from datetime import datetime
-#import pytz
-import requests
-import subprocess
-import urllib
-import uuid
-
 from flask import redirect, render_template, session
 from functools import wraps
 
-# Courtesy of CS50. We love Grumpy Cat! ^__^
+# Page to display client-side errors. Courtesy of CS50. We love Grumpy Cat! ^__^
 def apology(message, code=400):
     """Render message as an apology to user."""
 
@@ -34,7 +27,7 @@ def apology(message, code=400):
 
     return render_template("apology.html", top=code, bottom=escape(message)), code
 
-    
+# Function to make certain pages only accessible to logged in clients
 def login_required(f):
     """ Decorate routes to require login. http://flask.pocoo.org/docs/0.12/patterns/viewdecorators/"""
 
@@ -45,7 +38,9 @@ def login_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
-    
+
+# Function to be used for checking datetimes for scheduling a client. 
+# If the datetime for scheduling a client is prior to current timestamp, it will return true.   
 def time_passed(year, month, day, hour, minute):
     now = datetime.now()
     timestamp = now.timestamp()

@@ -12,7 +12,7 @@ Next, we planned what tables and values would be used from the database and how 
 we needed to query values using foreign keys. Then, we figured that using AUTOINCREMENT for the ids of the members
 and the contacts would be ideal to have unique member and contact ids.
 
-AFter that, we formulated the foundational layout to be implemented to the other pages using CSS, Bootstrap, and Jinja. We even used a couple of lines of JavaScript in the head tag of the html files to logout the user if the page is closed.
+AFter that, we formulated the foundational layout using HTML es343ewq1  to be implemented to the other pages using CSS, Bootstrap, and Jinja. We even used a couple of lines of JavaScript in the head tag of the html files to logout the user if the page is closed.
 
 Then we began writing the Python code to add and implement Flask to create a user session for each logged in member.
 

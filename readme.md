@@ -47,3 +47,28 @@ form.
 
 ===== Client Management =====
 
+Once you have a new client, you will see two buttons: Set Schedule and Delete Client. Delete client
+will remove it from the database and your account. Use the Set Schedule Button to set a month, day,
+year, and time (hours in military). Make sure you don't schedule the appointment at the same time as
+another estimate, as you will get the grumpy cat error page! (courtesy of CS50 :D )
+
+Once scheduled, you will be able to use the Update button along with the radio buttons to move the
+selected contact to either Estimate in Draft or Estimate Sent columns.
+
+Once you have 'written your estimate' (purely hypothetical), then you can set the contact to Estimate 
+Sent. After that, you will be able to select Quote Accepted or Quote Rejected. If you choose Quote Accepted, then you will be able to put in the amount of money you are 'charging' for the job, and it will
+be added to your total so you will be able to see how much money in jobs you have!
+Otherwise, if it has been rejected, then you can either keep the contact there or delete it from the
+database.
+
+===== End =====
+
+Once finished with your session, you will be able to either 'Log Out' in the top right hand corner,
+or if you navigate away from this page, you will be automatically logged out.
+
+  ____ ____ ____   ___  
+ / ___/ ___| ___| / _ \ 
+| |   \___ \___ \| | | |
+| |___ ___) |__) | |_| |
+ \____|____/____/ \___/ 
+

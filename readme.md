@@ -47,3 +47,5 @@ form.
 
 ===== Client Management =====
 
+Once you have a new client, you will see two buttons: Set Schedule and Delete Client. Delete client
+will remove it from the database and your account. Use the Set Schedule Button to 

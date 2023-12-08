@@ -11,10 +11,19 @@
     <link rel="stylesheet" href="static/style.css">
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script>
-        $(window).on('beforeunload', function() {
-            // Send an AJAX request to log out the user when the page is closed
-            $.get('/logout');
-        });
+        $(document).ready(function() {
+       // Send an AJAX request to log out the user when the page is closed
+       $(window).on('beforeunload', function(event) {
+           // Check if the event's returnValue is set, indicating a page reload
+           if (event.originalEvent.returnValue !== undefined) {
+               // Page is being reloaded or closed, do not send the AJAX request
+               return;
+           }
+
+           // Send an AJAX request to log out the user
+           $.get('/logout');
+       });
+   });
     </script>
     <title>ESchedule</title>
 </head>
@@ -33,12 +42,6 @@
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="/schedule">Schedule</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/draft">Draft Proposals</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/proposals">Proposals</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="/new_client">New Client</a>

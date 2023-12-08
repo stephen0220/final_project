@@ -85,6 +85,10 @@ input {
     margin-top: 5px;
 }
 
+.total-money {
+    color: var(--secondary);
+}
+
 @media only screen and (max-width: 992px){
     .clients{
         flex-direction: column;

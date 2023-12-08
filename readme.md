@@ -30,6 +30,7 @@ then run in the terminal: Flask run
 We have code in app.py between lines **-** that create a database incase there isn't one already created
 
 ===== New Client =====
+
 After the home page is loaded ('index') you will see a form to add a new client. This page is accesible
 to any person loading the page, whether they are logged in or not. Fill out the form with your data,
 and then select a contractor to submit your information to via the drop down option form at the bottom

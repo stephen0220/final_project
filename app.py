@@ -1,3 +1,5 @@
+# This Eschedule webapp has been a collaboration between Elicia Reynolds and Stephen Reynolds
+
 from flask import Flask, g, flash, redirect, request, session, redirect, url_for, render_template, request
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash

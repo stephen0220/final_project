@@ -4,6 +4,7 @@
     --primary: #1877aa;
     --secondary: #18AB7E;
     --third: #18A6AB;
+    --fourth: white;
 }
 
 body{
@@ -46,10 +47,16 @@ a{
     text-decoration: none;
 }
 
+button {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+
 nav a{
     font-weight: 700;
 }
-
+ 
 nav a img{
     width: auto;
     height: 100px;
@@ -70,8 +77,12 @@ input {
     color: #fff !important;
 }
 
-.card a {
-    color: #fff !important;
+.price {
+    white-space: wrap;
+}
+
+.price button {
+    margin-top: 5px;
 }
 
 @media only screen and (max-width: 992px){

@@ -1,9 +1,12 @@
+# This Eschedule webapp has been a collaboration between Elicia Reynolds and Stephen Reynolds
+
 from flask import Flask, g, flash, redirect, request, session, redirect, url_for, render_template, request
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 from helpers import apology, login_required, time_passed
 import sqlite3
 import re
+import calendar
 from datetime import datetime
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -13,7 +16,7 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# PLEASE LEAVE THIS COMMENTED UNTIL I AM FINISHED WITH EDITING THE TABLES!
+# Create tables to use in eschedule.db This will only execute if eschedule.db does not exist or has no data/tables
 
 conn = sqlite3.connect('eschedule.db')
 c = conn.cursor()
@@ -56,6 +59,7 @@ tables = [
     );""",
 ]
 
+# Iteration through the tables in create and implement them into the database
 for table in tables:
     c.execute(table)
 
@@ -86,23 +90,25 @@ def after_request(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
+# Opening page for users who are non-members and don't have an account
 @app.route('/', methods=["GET", "POST"])
 def index():
+    # Forget any user_id
     session.clear()
     c = None
     options = None  # Define options outside the try block
 
+    # Initialize sqlite cursor
     try:
         db = get_db()
         c = db.cursor()
 
-        # Code for the home page for non-members or those who are not logged in
         options = c.execute("SELECT company_name FROM members").fetchall()
 
         # Client-side submission form
         if request.method == "POST":
-            # Initialize the cursor outside the try block
-
+            
+            # New client information submission variables
             first_name = request.form.get("first_name")
             last_name = request.form.get("last_name")
             phone_number = request.form.get("phone_number")
@@ -111,8 +117,10 @@ def index():
             email = request.form.get("email")
             company = request.form.get("company")
 
+            # Email pattern using regular expressions
             email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
+            # Checking for valid user input
             if not first_name or not last_name:
                 return apology("must provide first and last name", 400)
 
@@ -127,7 +135,8 @@ def index():
 
             elif not company:
                 return apology("must select a company")
-            # Fetch the company_id
+            
+            # Fetch the company_id from members who have an account so that new client will be added to that members contacts table
             company_id_row = c.execute(
                 "SELECT member_id FROM members WHERE company_name = ?", (company,)
             ).fetchone()
@@ -135,7 +144,7 @@ def index():
             # Check if the company exists
             if company_id_row is not None:
                 company_id = company_id_row[0]  # Extract the value from the row
-                # Your insertion code here
+                # insertion code for new client
                 c.execute(
                     "INSERT INTO contacts (first_name, last_name, phone_number, email, address, work_type, member_id) VALUES(?,?,?,?,?,?,?)",
                     (first_name, last_name, phone_number, email, address, work_type, company_id)
@@ -153,15 +162,16 @@ def index():
 
     return render_template("index.html", options=options)
 
-
+# Home page for logged in members
 @app.route('/home')
+@login_required
 def home():
     c = None
     try:
         db = get_db()
         c = db.cursor()
 
-        # Code for the home page after member login
+        # Create a list of clients from the members database with values joined from the contacts and schedule tables
         clients = c.execute("""
             SELECT
                 contacts.contacts_id,
@@ -183,79 +193,69 @@ def home():
             WHERE
                 contacts.member_id = ?""", (session['user_id'],)).fetchall()
         
+        # Initialize variables to categorize the clients' statuses
         new = []
         scheduled = []
         draft = []
         sent = []
         won = []
         lost = []
+        # Total amount made from scheduled client who accepted the estimate price
         total = 0
 
          
 
-        
+        # Iterate through clients
         for client in clients:
             new.append(client)
-
+            # Initialize variables for schedule dates
             year = None
             month = None
             day = None
             hour = None
             minute = None
             price = 0
-
+            # Check client to see if it has been scheduled
             if client['month'] is not None:
                 scheduled.append(client)
                 if client in new:
                     new.remove(client)
-
+                # Gather data from schedule table from client
                 year = int(client['year'])
                 month = int(client['month'])
                 day = int(client['day'])
                 hour = int(client['hour'])
                 minute = int(client['minute'])
-
+            # Check status of client to see if client estimate datetime has already passed or if the status is set to 'draft'
             if client["status"] == 'draft' or (client["status"] is None and None not in (year, month, day, hour, minute) and time_passed(year, month, day, hour, minute) == True): 
                 draft.append(client)
                 if client in scheduled:
                     scheduled.remove(client)
-
+            # Check status of client to see if status is set to 'sent'
             if client["status"] == 'sent':
                 sent.append(client)
                 if client in scheduled:
                     scheduled.remove(client)
                 if client in draft:
                     draft.remove(client)
-
+            # Check status of client to see if status is set to 'won' meaning the client accepted the job estimate
             if client["status"] == 'won':
                 won.append(client)
                 if client in sent:
                     sent.remove(client)
                 if client in scheduled:
                     scheduled.remove(client)
-
+            # Check status of client to see if status is set to 'lost', meaning the client rejected the offer
             if client["status"] == 'lost':
                 lost.append(client)
                 if client in sent:
                     sent.remove(client)
-
+                if client in scheduled:
+                    scheduled.remove(client)
+            # If client is won, check to see if price quote is added to the value 'price' in the contacts table
             if client["price"] is not None and client["price"] != 0:
                 price = int(client["price"])
                 total += price
-
-
-
-            
-            
-            
-            
-        
-        print(len(new))
-        print(len(scheduled))
-        print(len(draft))
-        print(len(won))
-        print(len(lost))
-
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -264,13 +264,16 @@ def home():
         c.close()
     return render_template("home.html", new = new, clients=clients, scheduled = scheduled, draft = draft, sent = sent, won = won, lost = lost, total = total)
 
+# Function to use the radio buttons after the client is scheduled and after the estimate has been sent
 @app.route('/update_status', methods=['POST'])
 def update_status():
     try:
         db = get_db()
         c = db.cursor()
-
+        # Id of the client based off of a hidden input for the radio button form
         selected_id = int(request.form.get('client_id'))
+        # Fetch the value from which radio button has been selected, depending on the radio buttons in which form,
+        # the values are either 'draft', 'sent', 'won' or 'lost'
         selected_status = request.form.get('status')
 
         # Update the 'status' in the 'contacts' table
@@ -283,14 +286,15 @@ def update_status():
         c.close()
 
     return redirect('/home')
-
+# Input text field to submit price to the job
 @app.route('/add_price', methods=['POST'])
 def add_price():
     try:
         db = get_db()
         c = db.cursor()
-
+        # Id of the client based off of a hidden input for the radio button form
         selected_id = int(request.form.get('client_id'))
+        # Member input for job price
         price = int(request.form.get('price'))
 
         # Update the 'status' in the 'contacts' table
@@ -306,22 +310,22 @@ def add_price():
 
 
 
-
+# Delete client button available in certain divs on the home page
 @app.route('/delete_client', methods=['POST'])
 def delete_client():
     try:
         db = get_db()
         c = db.cursor()
-
+        # Id of the client based off of a hidden input
         removing = request.form.get('contact_id')
-        print(f"Deleting client with contacts_id: {removing}")
-
+        
+        # Delete client that matches the contacts_id in contacts
         c.execute(
             "DELETE FROM contacts WHERE contacts_id = ?", (removing,)
         )
 
         db.commit()
-        print("Deletion successful")
+        
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -329,10 +333,10 @@ def delete_client():
     finally:
         c.close()
 
-    print("Client deleted!")
+    
     return redirect("/home")
 
-
+# Page to add client to the estimate schedule
 @app.route('/schedule', methods=["GET", "POST"])
 @login_required
 def schedule():
@@ -341,12 +345,14 @@ def schedule():
     try:
         db = get_db()
         c = db.cursor()
-
-        options = c.execute("SELECT first_name || ' ' || last_name AS full_name FROM contacts").fetchall()
+        # Options for select form to select which client to add to schedule
+        options = c.execute(
+            """SELECT first_name || ' ' || last_name AS full_name FROM contacts
+                WHERE member_id = ?""", (session['user_id'],)).fetchall()
 
         # User reached route via POST (as by submitting a form via POST)
         if request.method == "POST":        
-                # Extract form values
+            # Extract form values
             month_str = request.form.get("month")
             day_str = request.form.get("day")
             year_str = request.form.get("year")
@@ -362,39 +368,34 @@ def schedule():
             year = int(year_str)
             hour = int(hour_str)
             minute = int(minute_str)
-            max_days = (datetime(year, month + 1, 1) - datetime(year, month, 1)).days
+            last_day_of_month = calendar.monthrange(year, month)[1]
             contact_name = request.form.get("contact_name")
-            
-            print(month)
-            print(day)
-            print (year)
-            print (hour)
-            print(minute)
-            print(max_days)
-
-            #if not month or not day or not year or not hour or not minute:
-            #    return apology("must provide date and time to schedule an appointment", 400)
-
-            #elif month < 1 or month > 12:
-            #    return apology("must provide a valid month (1-12)", 403)
-
+        
+            # Check validation for input
+            # Check if the month is in the valid range (1 to 12)
+            if month < 1 or month > 12:
+                return apology("month must be in 1..12", 403)
+            # Check to see if datetime is in the future
             if time_passed(year, month, day, hour, minute) == True:
                 return apology("Time has already passed", 403)
-
-            elif day < 1 or day > max_days:
+            
+            # Check to see if the day is within the month length
+            elif day < 1 or day > last_day_of_month:
                 return apology("must provide a valid day", 403)
-                
+            # Check to see if hour and minute are valid in Military Time  
             elif hour < 1 or hour > 24 or minute < 0 or minute > 59:
                 return apology("must provide a valid time", 403)
-
+            # Check to see if client name has been selected
             elif not contact_name:
                 return apology ("Please select a client to schedule")
 
 
             # Fetch the contact_id
             contact_name_row = c.execute(
-                "SELECT contacts_id FROM contacts WHERE first_name || ' ' || last_name = ?", (contact_name,)
+                "SELECT contacts_id FROM contacts WHERE first_name || ' ' || last_name = ? AND member_id = ?",
+                (contact_name, session['user_id'])
             ).fetchone()
+
 
             # Check if the contact exists
             if contact_name_row is not None:
@@ -402,6 +403,7 @@ def schedule():
             else:
                 return apology("no client found")
             
+            # Query for database to find if client has already been scheduled
             existing_client = c.execute(
                 "SELECT * FROM schedule WHERE contacts_id = ?",
                 (contact_id,)
@@ -411,6 +413,7 @@ def schedule():
             if existing_client:
                 return apology("client has already been scheduled", 400)
             
+            # Query database for same scheduled estimate
             existing_booking = c.execute(
             """SELECT * FROM schedule
             JOIN contacts ON schedule.contacts_id = contacts.contacts_id
@@ -424,6 +427,7 @@ def schedule():
             if existing_booking:
                 return apology("No availability! Please select a different time", 400)
 
+            # Insert booked client into schedule table
             c.execute(
                 "INSERT INTO schedule (month, day, year, hour, minute, contacts_id) VALUES(?,?,?,?,?,?)",
                 (month, day, year, hour, minute, contact_id))
@@ -439,21 +443,14 @@ def schedule():
     finally:
         c.close()
 
-
- 
-
-@app.route('/clients')
-@login_required
-def clients():
-     return render_template('clients.html')
-
+# Page to add a new client member-side
 @app.route('/new_client', methods = ["GET", "POST"])
 @login_required
 def new_client():
-    print("hello")
-    print(session["user_id"])
+
      # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":        
+    if request.method == "POST":
+        # Initialize variable for user input        
         first_name = request.form.get("first_name")
         last_name = request.form.get("last_name")
         phone_number = request.form.get("phone_number")
@@ -461,24 +458,27 @@ def new_client():
         work_type = request.form.get("work_type")
         email = request.form.get("email")
         member_id = session["user_id"]
+        # Regular expression for email form
         email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
+        # Check for any invalid inputs from user
+        # Check for first and last names
         if not first_name or not last_name:
             return apology("must provide first and last name", 400)
-        
+        # Check for phone number and the correct length
         elif not phone_number or len(phone_number) != 10 or not phone_number.isdigit():
             return apology("must provide a valid phone number", 403)
-        
+        # Check for email and correct format
         elif not email or not re.match(email_pattern,email):
             return apology("must provide a valid email", 403)
-        
+        # Check for address and job description
         elif not address or not work_type:
             return apology("must provide address and work type", 403)
-        
+        # Just in case someone hacked in and made it this far without logging in or having an account
         elif not member_id:
             return apology ("must login before adding contacts")
         
-         # Initialize the cursor outside the try block
+        # Initialize the cursor outside the try block
         c = None
 
         try:
@@ -494,7 +494,7 @@ def new_client():
             # Check to see if client already exists
             if existing_client:
                 return apology("client has already been added", 400)
-
+            # Insert new client into contacts table
             c.execute(
                 "INSERT INTO contacts (first_name, last_name, phone_number, email, address, work_type, member_id) VALUES(?,?,?,?,?,?,?)",
                 (first_name, last_name, phone_number, email, address, work_type, member_id))            
@@ -510,7 +510,7 @@ def new_client():
 
     else:
      return render_template('new_client.html')
-    
+# Logout user 
 @app.route("/logout")
 def logout():
     """Log user out"""
@@ -520,13 +520,15 @@ def logout():
 
     # Redirect user to login form
     return redirect("/")
-
+# Login user
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
+    # Forget any user_id
     session.clear()
 
     if request.method == "POST":
+        # Initialize variable from user input
         username = request.form.get("username")
         password = request.form.get("password")
         # Initialize the cursor outside the try block
@@ -559,16 +561,16 @@ def login():
     # Moved the render_template outside the finally block
     return render_template("login.html")
 
+# Create new member account
 @app.route("/create_account", methods=["GET", "POST"])
 def create_account():
-    """Register user"""
     # Remove any user ID
     session.clear()
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
 
-        # Ensure first name was submitted
+        # Initailize variable for user input
 
         phone_number = request.form.get("phone_number")
         first_name = request.form.get("first_name")
@@ -577,17 +579,20 @@ def create_account():
         username = request.form.get("username")
         password = request.form.get("password")
         email = request.form.get("email")
+        # Regular expression for email format
         email_pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
 
+        # Check for valid user input
+        # Check for first and last names
         if not first_name or not last_name or not company_name:
             return apology("must provide first and last name and company name", 400)
-        
+        # Check for phone number and correct length
         elif not phone_number or len(phone_number) != 10 or not phone_number.isdigit():
             return apology("must provide a valid phone number", 403)
-        
+        # Check for email and correct format
         elif not email or not re.match(email_pattern,email):
             return apology("must provide a valid email", 403)
-        
+        # Check for username and password
         elif not username or not password:
             return apology("must provide username and password", 403)
         
@@ -599,7 +604,7 @@ def create_account():
         elif password != request.form.get("confirmation"):
             return apology("passwords must match", 400)
 
-         # Initialize the cursor outside the try block
+        # Initialize the cursor outside the try block
         c = None
 
         try:
@@ -609,7 +614,7 @@ def create_account():
            # Query database for username
             row = c.execute("SELECT * FROM members WHERE username = ?", (username,)).fetchone()
 
-            # Ensure username exists
+            # Ensure no duplicate username exists
             if row is not None:
                 return apology("Username already exists", 400)
 
@@ -639,13 +644,17 @@ def create_account():
 
     else:
         return render_template("create_account.html")
-    
+
+ # Change password    
 @app.route("/password", methods=["GET", "POST"])
+@login_required
 def password():
-    """Change password"""
 
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
+        # Initialize the cursor outside the try block
+        c = None
+
         try:
             db = get_db()
             c = db.cursor()
@@ -684,7 +693,7 @@ def password():
             # Ensure password and confirmation match
             elif request.form.get("new_password") != request.form.get("confirmation"):
                 return apology("passwords must match", 400)
-            # Insert username new password into database
+            # Insert username with new password into database
             c.execute(
                 "UPDATE members SET hash = ? WHERE username = ?",
                 (generate_password_hash(request.form.get("new_password")), 
@@ -721,32 +730,31 @@ def password():
             c.close()
     else:
         return render_template("password.html")
-    
+
+# Delete member account button  
 @app.route('/delete_member', methods=['POST'])
 def delete_member():
     try:
         db = get_db()
         c = db.cursor()
-
+        # Value from hidden form
         removing = session['user_id']
-        print(f"Deleting client with contacts_id: {removing}")
-
+        # Delete member's schedule
         c.execute(
             """DELETE FROM schedule
             WHERE contacts_id IN (SELECT contacts_id FROM contacts WHERE member_id = ?)""",
             (removing,)
         )
-
+        # Delete members clients
         c.execute(
             """DELETE FROM contacts WHERE member_id = ?""", (removing,)
         )
-
+        # Delete member
         c.execute(
             "DELETE FROM members WHERE member_id = ?", (removing,)
         )
 
         db.commit()
-        print("Deletion successful")
 
     except Exception as e:
         return f"Error: {str(e)}"
